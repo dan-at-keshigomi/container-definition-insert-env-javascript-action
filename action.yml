@@ -1,0 +1,14 @@
+name: 'CloudFormation Container Definition Set Environment'
+description: 'Sets the environment block to the provided environment variables'
+inputs:
+  file:  # id of input
+    description: 'Path to the file to update'
+    required: true
+    default: ''
+  vars:
+    description: 'Environment variables to set. Use a multi-line string, provide colon-separated key-value pairs, one per line'
+    required: false
+    default: ''
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
