@@ -4,7 +4,9 @@ inputs:
   file:  # id of input
     description: 'Path to the file to update'
     required: true
-    default: ''
+  env-prop-jsonpath:
+    description: 'JSON path inside the YAML file that points to the Environment element where to add the variables.'
+    required: true
   vars:
     description: 'Environment variables to set. Use a multi-line string, provide colon-separated key-value pairs, one per line'
     required: false

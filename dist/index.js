@@ -12,28 +12,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __importDefault(require("@actions/core"));
-const github_1 = __importDefault(require("@actions/github"));
 const fs_1 = __importDefault(require("fs"));
 const util_1 = __importDefault(require("util"));
 const readFileAsync = util_1.default.promisify(fs_1.default.readFile);
 const writeFileAsync = util_1.default.promisify(fs_1.default.writeFile);
+const core_1 = __importDefault(require("@actions/core"));
+const yaml_cfn_1 = require("yaml-cfn");
+const jsonpath_1 = __importDefault(require("jsonpath"));
 const placeholder = "${vars-placeholder}";
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // `who-to-greet` input defined in action metadata file
+            // `file` input is required, and the file is required to exist
             const filePath = core_1.default.getInput("file");
             if (!fs_1.default.existsSync(filePath)) {
                 throw new Error(`Could not find file with path: ${filePath}`);
             }
-            const fileContents = (yield readFileAsync(filePath)).toString("utf8");
-            const indent = getPlaceholderIndent(fileContents);
-            const updatedContents = fileContents.replace(placeholder, getVarsString(indent));
-            yield writeFileAsync(filePath, updatedContents);
-            // Get the JSON webhook payload for the event that triggered the workflow
-            const payload = JSON.stringify(github_1.default.context.payload, undefined, 2);
-            console.log(`The event payload: ${payload}`);
+            // `env-prop-jsonpath` input is required
+            const jsonPath = core_1.default.getInput("env-prop-jsonpath");
+            if (!jsonPath) {
+                throw new Error("The env-prop-jsonpath value must be provided.");
+            }
+            // read and parse the yaml file
+            const file = yield readFileAsync(filePath);
+            const parsedYaml = yaml_cfn_1.yamlParse(file.toString("utf8"));
+            // replace the specified node path with the environment variables descriptor
+            jsonpath_1.default.apply(parsedYaml, jsonPath, () => getVars());
+            // save the file
+            yield writeFileAsync(filePath, yaml_cfn_1.yamlDump(parsedYaml));
         }
         catch (error) {
             core_1.default.setFailed(error.message);
@@ -41,26 +47,61 @@ function run() {
     });
 }
 ;
-function getPlaceholderIndent(fileContents) {
-    const fileLines = fileContents.split("\n");
-    const placeholderLineIndex = fileLines.findIndex(l => l.match(/placeholder/));
-    const placeholderLine = fileLines[placeholderLineIndex];
-    return placeholderLine.indexOf(placeholder);
+function parseVarLine2(line) {
+    var _a;
+    line = line === null || line === void 0 ? void 0 : line.trim();
+    if (!line) {
+        return undefined;
+    }
+    const { groups: [name, value] } = ((_a = /^(?<name>.+)\s*\:\s*(?<value>.*)$/g.exec(line)) === null || _a === void 0 ? void 0 : _a.groups) || {};
+    // line has a colon, but no value. set value to undefined
+    if (!value) {
+        return { Name: name };
+    }
+    // line has a colon and a value. value may be wrapped in quotes of some sort
+    else {
+        const valNoWrappingSingleOrDoubleQuotes = trimPairedWrap(trimPairedWrap(value), "'");
+        return { Name: name, Value: valNoWrappingSingleOrDoubleQuotes };
+    }
 }
-function getVarsString(indentSize = 11) {
-    const indent = " ".repeat(indentSize);
+function trimPairedWrap(str, sep = "\"") {
+    const trimWrapRegex = new RegExp(`${sep}([^${sep}]+(?=${sep}))${sep}`, "g");
+    return str.replace(trimWrapRegex, "$1");
+}
+/**
+ * Possibilities:
+ * // this is a comment
+ * # this is a comment
+ *
+ * # will create MYVAR1 variable entry and set its value to secrets[MYVAR1]
+ * MYVAR1
+ * # will create MYVAR2 variable entry and set its value to undefined
+ * MYVAR2:
+ * # will create MYVAR3 variable entry and set its value to 'some value'
+ * MYVAR3: 'some value'
+ * @returns a parsed environment variable info object
+ */
+// function parseVarLine(line?: string): IEnvVarInfo | undefined {
+//     // if the line is empty or starts # or //, it is ignored
+//     line = line?.trim();
+//     if (!line || line.startsWith("#") || line.startsWith("//")) {
+//         return undefined;
+//     }
+//     const colonIndex = line.indexOf(":");
+//     // if the colon is first thing on the line, throw an error since we need a variable name
+//     if (colonIndex === 0) {
+//         throw new Error("A line containing a colon must provide a variable name");
+//     }
+//     // there is no colon on the line, get the value from Github Secrets
+//     if (colonIndex === -1) {
+//         //todo
+//     }
+// }
+function getVars() {
     const output = [];
     const vars = core_1.default.getMultilineInput("vars");
-    for (const v of vars) {
-        const colonIndex = v.indexOf(":");
-        const name = v.substr(0, colonIndex - 1);
-        const val = v.substr(colonIndex);
-        if (val) {
-            output.push(`${indent}- Name: ${name.trim()}
-${indent}  Value: ${val.trim()}
-`);
-        }
-    }
-    return output.join("");
+    return vars.map(vl => parseVarLine2(vl))
+        .filter(v => !!v)
+        .map(v => v);
 }
 run();
