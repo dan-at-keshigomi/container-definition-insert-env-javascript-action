@@ -55,8 +55,13 @@ function run() {
             // read and parse the yaml file
             const file = yield readFileAsync(filePath);
             const parsedYaml = yaml_cfn_1.yamlParse(file.toString("utf8"));
+            // get the vars
+            const vars = getVars();
+            core.startGroup("Parsed vars");
+            core.info(JSON.stringify(vars));
+            core.endGroup();
             // replace the specified node path with the environment variables descriptor
-            jsonpath_1.default.apply(parsedYaml, jsonPath, () => getVars());
+            jsonpath_1.default.apply(parsedYaml, jsonPath, () => vars);
             // save the file
             yield writeFileAsync(filePath, yaml_cfn_1.yamlDump(parsedYaml));
         }

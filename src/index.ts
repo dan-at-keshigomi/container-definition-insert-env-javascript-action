@@ -26,8 +26,13 @@ async function run() {
         // read and parse the yaml file
         const file = await readFileAsync(filePath);
         const parsedYaml = yamlParse(file.toString("utf8"));
+        // get the vars
+        const vars = getVars();
+        core.startGroup("Parsed vars");
+        core.info(JSON.stringify(vars));
+        core.endGroup();
         // replace the specified node path with the environment variables descriptor
-        jsonpath.apply(parsedYaml, jsonPath, () => getVars());
+        jsonpath.apply(parsedYaml, jsonPath, () => vars);
         // save the file
         await writeFileAsync(filePath, yamlDump(parsedYaml));
     } catch (error) {
