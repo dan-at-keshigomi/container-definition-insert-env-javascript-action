@@ -3,8 +3,7 @@ import util from "util";
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
-import core from "@actions/core";
-import github from "@actions/github";
+import * as core from "@actions/core";
 
 import { yamlParse, yamlDump } from "yaml-cfn";
 import jsonpath from "jsonpath";
