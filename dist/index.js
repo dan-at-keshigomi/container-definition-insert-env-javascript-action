@@ -12,14 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.run = void 0;
 const fs_1 = __importDefault(require("fs"));
-const util_1 = __importDefault(require("util"));
-const readFileAsync = util_1.default.promisify(fs_1.default.readFile);
-const writeFileAsync = util_1.default.promisify(fs_1.default.writeFile);
 const core_1 = __importDefault(require("@actions/core"));
 const yaml_cfn_1 = require("yaml-cfn");
 const jsonpath_1 = __importDefault(require("jsonpath"));
-const placeholder = "${vars-placeholder}";
+const VarParser_1 = require("./VarParser");
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -34,74 +32,19 @@ function run() {
                 throw new Error("The env-prop-jsonpath value must be provided.");
             }
             // read and parse the yaml file
-            const file = yield readFileAsync(filePath);
-            const parsedYaml = yaml_cfn_1.yamlParse(file.toString("utf8"));
+            const file = yield fs_1.default.promises.readFile(filePath);
+            const parsedYaml = (0, yaml_cfn_1.yamlParse)(file.toString("utf8"));
+            const parsedVars = VarParser_1.VarParser.parseVars(core_1.default.getMultilineInput("vars"));
             // replace the specified node path with the environment variables descriptor
-            jsonpath_1.default.apply(parsedYaml, jsonPath, () => getVars());
+            jsonpath_1.default.apply(parsedYaml, jsonPath, () => parsedVars || []);
             // save the file
-            yield writeFileAsync(filePath, yaml_cfn_1.yamlDump(parsedYaml));
+            yield fs_1.default.promises.writeFile(filePath, (0, yaml_cfn_1.yamlDump)(parsedYaml));
         }
         catch (error) {
             core_1.default.setFailed(error.message);
         }
     });
 }
+exports.run = run;
 ;
-function parseVarLine2(line) {
-    var _a;
-    line = line === null || line === void 0 ? void 0 : line.trim();
-    if (!line) {
-        return undefined;
-    }
-    const { groups: [name, value] } = ((_a = /^(?<name>.+)\s*\:\s*(?<value>.*)$/g.exec(line)) === null || _a === void 0 ? void 0 : _a.groups) || {};
-    // line has a colon, but no value. set value to undefined
-    if (!value) {
-        return { Name: name };
-    }
-    // line has a colon and a value. value may be wrapped in quotes of some sort
-    else {
-        const valNoWrappingSingleOrDoubleQuotes = trimPairedWrap(trimPairedWrap(value), "'");
-        return { Name: name, Value: valNoWrappingSingleOrDoubleQuotes };
-    }
-}
-function trimPairedWrap(str, sep = "\"") {
-    const trimWrapRegex = new RegExp(`${sep}([^${sep}]+(?=${sep}))${sep}`, "g");
-    return str.replace(trimWrapRegex, "$1");
-}
-/**
- * Possibilities:
- * // this is a comment
- * # this is a comment
- *
- * # will create MYVAR1 variable entry and set its value to secrets[MYVAR1]
- * MYVAR1
- * # will create MYVAR2 variable entry and set its value to undefined
- * MYVAR2:
- * # will create MYVAR3 variable entry and set its value to 'some value'
- * MYVAR3: 'some value'
- * @returns a parsed environment variable info object
- */
-// function parseVarLine(line?: string): IEnvVarInfo | undefined {
-//     // if the line is empty or starts # or //, it is ignored
-//     line = line?.trim();
-//     if (!line || line.startsWith("#") || line.startsWith("//")) {
-//         return undefined;
-//     }
-//     const colonIndex = line.indexOf(":");
-//     // if the colon is first thing on the line, throw an error since we need a variable name
-//     if (colonIndex === 0) {
-//         throw new Error("A line containing a colon must provide a variable name");
-//     }
-//     // there is no colon on the line, get the value from Github Secrets
-//     if (colonIndex === -1) {
-//         //todo
-//     }
-// }
-function getVars() {
-    const output = [];
-    const vars = core_1.default.getMultilineInput("vars");
-    return vars.map(vl => parseVarLine2(vl))
-        .filter(v => !!v)
-        .map(v => v);
-}
 run();
