@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import core from "@actions/core";
+import * as core from "@actions/core";
 
 import { yamlParse, yamlDump } from "yaml-cfn";
 import jsonpath from "jsonpath";
