@@ -1,5 +1,5 @@
-import core from "@actions/core";
-import fs from "fs";
+import * as core from "@actions/core";
+import * as fs from "fs";
 import { IEnvVarInfo } from "./IEnvVarInfo";
 import { VarParser } from "./VarParser";
 import { VarYamlFormatter } from "./VarYamlFormatter";
