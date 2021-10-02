@@ -14,7 +14,9 @@ class VarParser {
      * @returns a parsed environment variable info object
      */
     static parseVars(varLines) {
-        return varLines === null || varLines === void 0 ? void 0 : varLines.map(vl => VarParser.parseVarLine(vl)).filter(v => !!v).map(v => v);
+        return (varLines || []).map(vl => VarParser.parseVarLine(vl))
+            .filter(v => !!v)
+            .map(v => v);
     }
     static parseVarLine(line) {
         var _a;
@@ -36,7 +38,7 @@ class VarParser {
         }
         // line has a colon and a value. value may be wrapped in single or double quotes
         else {
-            return { Name: name, Value: VarParser.trimQuotes(value) };
+            return { Name: name, Value: value /* VarParser.trimQuotes(value) */ };
         }
     }
     /**

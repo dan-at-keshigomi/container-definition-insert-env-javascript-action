@@ -1,15 +1,16 @@
 import { describe, it, expect } from "@jest/globals";
-import core from "@actions/core";
+import * as core from "@actions/core";
 jest.mock("@actions/core", () => ({
     setFailed: jest.fn(),
     getInput: jest.fn(),
     getMultilineInput: jest.fn()
 }));
-import fs, { PathLike } from "fs";
-import { FileHandle } from "fs/promises";
+import * as fs from "fs/promises";
+// import { FileHandle } from "fs/promises";
 import { Stream } from "stream";
 
-import { run } from "../src/index";
+import { FileProcessor } from "../src/FileProcessor";
+import { PathLike } from "fs";
 
 describe("run", () => {
     it("withValidVars_insertsVarsIntoEnvironmentBlock", async () => {
@@ -25,18 +26,18 @@ describe("run", () => {
         };
         mockCoreInputs(inputs);
 
-        jest.spyOn(fs, "existsSync").mockImplementation(() => true);
         mockReadFile(`
             Resources:
               TaskDefinition:
                 Properties:
                   ContainerDefinitions:
-                    - Environment:`);
+                    - Environment:
+                      $\{placeholder\}`);
         let result = undefined;
         mockWriteFile((contents) => result = contents);
         
         // act
-        await run();
+        await new FileProcessor().process();
 
         // assert
         expect(result).not.toBeUndefined();
@@ -58,18 +59,18 @@ describe("run", () => {
         };
         mockCoreInputs(inputs);
 
-        jest.spyOn(fs, "existsSync").mockImplementation(() => true);
         mockReadFile(`
             Resources:
               TaskDefinition:
                 Properties:
                   ContainerDefinitions:
-                    - Environment:`);
+                    - Environment:
+                      $\{placeholder\}`);
         let result = undefined;
         mockWriteFile((contents) => result = contents);
 
         // act
-        await run();
+        await new FileProcessor().process();
 
         // assert
         expect(result).not.toBeUndefined();
@@ -87,7 +88,7 @@ describe("run", () => {
         (core.setFailed as jest.MockedFunction<any>).mockImplementation((message: string) => error = message);
 
         // act
-        await run();
+        await new FileProcessor().process();
 
         // assert
         expect(error).not.toBeUndefined();
@@ -103,10 +104,9 @@ describe("run", () => {
         mockCoreInputs(inputs);
         let error = undefined;
         (core.setFailed as jest.MockedFunction<any>).mockImplementation((message: string) => error = message);
-        jest.spyOn(fs, "existsSync").mockImplementation(() => true);
 
         // act
-        await run();
+        await new FileProcessor().process();
 
         // assert
         expect(error).not.toBeUndefined();
@@ -127,8 +127,8 @@ function mockCoreInputs(inputs: { [key: string]: string | undefined }) {
 
 function mockWriteFile(callback: (contents: string) => void) {
     // let result = undefined;
-    jest.spyOn(fs.promises, "writeFile").mockImplementation(
-        (file: PathLike | FileHandle,
+    jest.spyOn(fs, "writeFile").mockImplementation(
+        (file: PathLike | fs.FileHandle,
             contents: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | Stream): Promise<void> => {
             // result = contents;
             callback(contents.toString());
@@ -137,6 +137,6 @@ function mockWriteFile(callback: (contents: string) => void) {
 }
 
 function mockReadFile(contents: string) {
-    jest.spyOn(fs.promises, "readFile").mockImplementation(
+    jest.spyOn(fs, "readFile").mockImplementation(
         () => Promise.resolve(Buffer.from(contents, "utf-8")));
 }

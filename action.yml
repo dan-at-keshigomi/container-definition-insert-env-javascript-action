@@ -4,13 +4,26 @@ inputs:
   file:  # id of input
     description: 'Path to the file to update'
     required: true
-  env-prop-jsonpath:
-    description: 'JSON path inside the YAML file that points to the Environment element where to add the variables.'
-    required: true
+  placeholder:
+    description: 'Placeholder text that will be replaced in the specified file. Default is `${placeholder}`'
+    required: false
+    default: '${placeholder}'
   vars:
     description: 'Environment variables to set. Use a multi-line string, provide colon-separated key-value pairs, one per line'
     required: false
     default: ''
+  varSeparator:
+    description: 'Separator to use when joining variable lines from `vars`. Default is `\n`'
+    required: false
+    default: '\n'
+  indentSize:
+    description: 'Indent size. If the string `auto` is provided, will use the same indent as the indent of the placeholder'
+    required: false
+    default: 'auto'
+  encoding:
+    description: 'Encoding to use to read and write the file. Default is `utf-8`'
+    required: false
+    default: 'utf-8'
 runs:
   using: 'node12'
   main: 'dist/index.js'

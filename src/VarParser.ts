@@ -1,8 +1,4 @@
-
-export interface IEnvVarInfo {
-    Name: string;
-    Value?: string;
-}
+import { IEnvVarInfo } from "./IEnvVarInfo";
 
 export class VarParser {
     /**
@@ -17,7 +13,7 @@ export class VarParser {
      * @returns a parsed environment variable info object
      */
     public static parseVars(varLines: string[]): IEnvVarInfo[]|undefined {
-        return varLines?.map(vl => VarParser.parseVarLine(vl))
+        return (varLines || []).map(vl => VarParser.parseVarLine(vl))
             .filter(v => !!v)
             .map(v => v as IEnvVarInfo);
     }
@@ -41,7 +37,7 @@ export class VarParser {
         }
         // line has a colon and a value. value may be wrapped in single or double quotes
         else {
-            return { Name: name, Value: VarParser.trimQuotes(value) }
+            return { Name: name, Value: value /* VarParser.trimQuotes(value) */ }
         }
     }
 
