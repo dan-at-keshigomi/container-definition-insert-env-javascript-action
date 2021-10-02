@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileProcessor = void 0;
 const core_1 = __importDefault(require("@actions/core"));
-const promises_1 = __importDefault(require("fs/promises"));
+const fs_1 = __importDefault(require("fs"));
 const VarParser_1 = require("./VarParser");
 const VarYamlFormatter_1 = require("./VarYamlFormatter");
 class FileProcessor {
@@ -17,7 +17,7 @@ class FileProcessor {
             const filePath = core_1.default.getInput("file");
             let fileContents;
             try {
-                fileContents = await promises_1.default.readFile(filePath, encoding);
+                fileContents = await fs_1.default.promises.readFile(filePath, encoding);
             }
             catch (err) {
                 throw new Error(`Could not open file with path: ${filePath}`);
@@ -34,7 +34,7 @@ class FileProcessor {
             // const varsString = (parsedVars || []).join(varSeparator);
             const updatedFileContents = this.replaceInContents(fileContents, parsedVars || [], varSeparator, placeholder, indentSize === "auto" ? undefined : Number.parseInt(indentSize));
             // fileContents.replace(placeholder, varsString);
-            await promises_1.default.writeFile(filePath, updatedFileContents, encoding);
+            await fs_1.default.promises.writeFile(filePath, updatedFileContents, encoding);
             // // `env-prop-jsonpath` input is required
             // const jsonPath = core.getInput("env-prop-jsonpath");
             // if (!jsonPath) {

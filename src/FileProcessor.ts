@@ -1,5 +1,5 @@
 import core from "@actions/core";
-import fs from "fs/promises";
+import fs from "fs";
 import { IEnvVarInfo } from "./IEnvVarInfo";
 import { VarParser } from "./VarParser";
 import { VarYamlFormatter } from "./VarYamlFormatter";
@@ -14,7 +14,7 @@ export class FileProcessor {
             const filePath = core.getInput("file");
             let fileContents: string;
             try {
-                fileContents = await fs.readFile(filePath, encoding);
+                fileContents = await fs.promises.readFile(filePath, encoding);
             } catch (err) {
                 throw new Error(`Could not open file with path: ${filePath}`);
             }
@@ -41,7 +41,7 @@ export class FileProcessor {
                 indentSize === "auto" ? undefined : Number.parseInt(indentSize));
             // fileContents.replace(placeholder, varsString);
 
-            await fs.writeFile(filePath, updatedFileContents, encoding);
+            await fs.promises.writeFile(filePath, updatedFileContents, encoding);
 
             // // `env-prop-jsonpath` input is required
             // const jsonPath = core.getInput("env-prop-jsonpath");

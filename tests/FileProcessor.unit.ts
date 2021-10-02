@@ -5,8 +5,8 @@ jest.mock("@actions/core", () => ({
     getInput: jest.fn(),
     getMultilineInput: jest.fn()
 }));
-import * as fs from "fs/promises";
-// import { FileHandle } from "fs/promises";
+import * as fs from "fs";
+import { FileHandle } from "fs/promises";
 import { Stream } from "stream";
 
 import { FileProcessor } from "../src/FileProcessor";
@@ -127,8 +127,8 @@ function mockCoreInputs(inputs: { [key: string]: string | undefined }) {
 
 function mockWriteFile(callback: (contents: string) => void) {
     // let result = undefined;
-    jest.spyOn(fs, "writeFile").mockImplementation(
-        (file: PathLike | fs.FileHandle,
+    jest.spyOn(fs.promises, "writeFile").mockImplementation(
+        (file: PathLike | FileHandle,
             contents: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | Stream): Promise<void> => {
             // result = contents;
             callback(contents.toString());
@@ -137,6 +137,6 @@ function mockWriteFile(callback: (contents: string) => void) {
 }
 
 function mockReadFile(contents: string) {
-    jest.spyOn(fs, "readFile").mockImplementation(
+    jest.spyOn(fs.promises, "readFile").mockImplementation(
         () => Promise.resolve(Buffer.from(contents, "utf-8")));
 }
