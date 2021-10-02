@@ -5,12 +5,23 @@ jest.mock("@actions/core", () => ({
     getInput: jest.fn(),
     getMultilineInput: jest.fn()
 }));
-import * as fs from "fs";
 import { FileHandle } from "fs/promises";
 import { Stream } from "stream";
 
 import { FileProcessor } from "../src/FileProcessor";
 import { PathLike } from "fs";
+import * as fs from "fs";
+
+jest.mock("fs", () => {
+    const fs = jest.requireActual("fs");
+    return {
+        promises: {
+            ...fs,
+            readFile: jest.fn(),
+            writeFile: jest.fn()
+        }
+    }
+});
 
 describe("run", () => {
     it("withValidVars_insertsVarsIntoEnvironmentBlock", async () => {
@@ -21,7 +32,6 @@ describe("run", () => {
         const testValue2 = "testValue2";
         const inputs: IInputs = {
             ["file"]: "a file path",
-            ["env-prop-jsonpath"]: "$.Resources.TaskDefinition.Properties.ContainerDefinitions[0].Environment",
             ["vars"]: [`${testVar1}: ${testValue1}`, `${testVar2}: ${testValue2}`, "// comment"].join("\n")
         };
         mockCoreInputs(inputs);
@@ -54,7 +64,6 @@ describe("run", () => {
         // arrange
         const inputs: IInputs = {
             ["file"]: "a file path",
-            ["env-prop-jsonpath"]: "$.Resources.TaskDefinition.Properties.ContainerDefinitions[0].Environment",
             ["vars"]: varsValue
         };
         mockCoreInputs(inputs);
@@ -74,14 +83,13 @@ describe("run", () => {
 
         // assert
         expect(result).not.toBeUndefined();
-        expect(result).toMatch(/^[\s\S]*- Environment: \[\][\s\S]*$/gm);
+        expect(result).toMatch(/^[\s\S]*- Environment:[\s\S]*$/gm);
     });
 
     it("withMissingFileInput_failsAction", async () => {
         // arrange
         const inputs: IInputs = {
             ["file"]: undefined,
-            ["env-prop-jsonpath"]: "$.Resources.TaskDefinition.Properties.ContainerDefinitions[0].Environment"
         };
         mockCoreInputs(inputs);
         let error = undefined;
@@ -92,25 +100,7 @@ describe("run", () => {
 
         // assert
         expect(error).not.toBeUndefined();
-        expect(error).toContain("Could not find file with path");
-    });
-
-    it("withMissingEnvPropJsonpathInput_failsAction", async () => {
-        // arrange
-        const inputs: IInputs = {
-            ["file"]: "a file name",
-            ["env-prop-jsonpath"]: undefined
-        };
-        mockCoreInputs(inputs);
-        let error = undefined;
-        (core.setFailed as jest.MockedFunction<any>).mockImplementation((message: string) => error = message);
-
-        // act
-        await new FileProcessor().process();
-
-        // assert
-        expect(error).not.toBeUndefined();
-        expect(error).toContain("The env-prop-jsonpath value must be provided");
+        expect(error).toContain("A file path must be provided.");
     });
 });
 
@@ -127,7 +117,8 @@ function mockCoreInputs(inputs: { [key: string]: string | undefined }) {
 
 function mockWriteFile(callback: (contents: string) => void) {
     // let result = undefined;
-    jest.spyOn(fs.promises, "writeFile").mockImplementation(
+    (fs.promises.writeFile as jest.MockedFunction<any>).
+    /* jest.spyOn(fs.promises, "writeFile"). */mockImplementation(
         (file: PathLike | FileHandle,
             contents: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | Stream): Promise<void> => {
             // result = contents;
@@ -137,6 +128,7 @@ function mockWriteFile(callback: (contents: string) => void) {
 }
 
 function mockReadFile(contents: string) {
-    jest.spyOn(fs.promises, "readFile").mockImplementation(
-        () => Promise.resolve(Buffer.from(contents, "utf-8")));
+    (fs.promises.readFile as jest.MockedFunction<any>).
+    /* jest.spyOn(fs.promises, "readFile"). */mockImplementation(
+        () => Promise.resolve(contents));
 }

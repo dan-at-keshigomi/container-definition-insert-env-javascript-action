@@ -15,6 +15,9 @@ class FileProcessor {
             const encoding = core_1.default.getInput("encoding") || "utf-8";
             // `file` input is required, and the file is required to exist
             const filePath = core_1.default.getInput("file");
+            if (!filePath) {
+                throw new Error(`A file path must be provided.`);
+            }
             let fileContents;
             try {
                 fileContents = await fs_1.default.promises.readFile(filePath, encoding);
@@ -27,12 +30,12 @@ class FileProcessor {
             // `vars` input is optional. if not provided, use empty string.
             const vars = core_1.default.getMultilineInput("vars");
             // `varSeparator` input is optional. if not provided, use '\n'.
-            const varSeparator = core_1.default.getInput("varSeparator");
+            const varSeparator = core_1.default.getInput("varSeparator") || "\n";
             // `indentSize` input is optional. if not provided, uses 'auto'.
             const indentSize = core_1.default.getInput("indentSize") || "auto";
             const parsedVars = VarParser_1.VarParser.parseVars(vars);
             // const varsString = (parsedVars || []).join(varSeparator);
-            const updatedFileContents = this.replaceInContents(fileContents, parsedVars || [], varSeparator, placeholder, indentSize === "auto" ? undefined : Number.parseInt(indentSize));
+            const updatedFileContents = this.replaceInContents(fileContents || "", parsedVars || [], varSeparator, placeholder, indentSize === "auto" ? undefined : Number.parseInt(indentSize));
             // fileContents.replace(placeholder, varsString);
             await fs_1.default.promises.writeFile(filePath, updatedFileContents, encoding);
             // // `env-prop-jsonpath` input is required
@@ -54,10 +57,11 @@ class FileProcessor {
         }
     }
     replaceInContents(contents, vars, lineSeparator, placeholder, requestedIndentSize) {
-        return contents.split(lineSeparator).map(l => {
+        const result = contents.split(lineSeparator).map(l => {
             const indentSize = requestedIndentSize || l.indexOf(placeholder);
             return indentSize > -1 ? new VarYamlFormatter_1.VarYamlFormatter(lineSeparator, indentSize).format(vars) : l;
         }).join(lineSeparator);
+        return result;
     }
 }
 exports.FileProcessor = FileProcessor;

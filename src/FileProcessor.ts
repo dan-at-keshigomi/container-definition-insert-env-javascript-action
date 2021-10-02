@@ -12,6 +12,9 @@ export class FileProcessor {
 
             // `file` input is required, and the file is required to exist
             const filePath = core.getInput("file");
+            if (!filePath) {
+                throw new Error(`A file path must be provided.`);
+            }
             let fileContents: string;
             try {
                 fileContents = await fs.promises.readFile(filePath, encoding);
@@ -25,7 +28,7 @@ export class FileProcessor {
             const vars = core.getMultilineInput("vars");
 
             // `varSeparator` input is optional. if not provided, use '\n'.
-            const varSeparator = core.getInput("varSeparator");
+            const varSeparator = core.getInput("varSeparator") || "\n";
 
             // `indentSize` input is optional. if not provided, uses 'auto'.
             const indentSize = core.getInput("indentSize") || "auto";
@@ -34,7 +37,7 @@ export class FileProcessor {
             // const varsString = (parsedVars || []).join(varSeparator);
 
             const updatedFileContents = this.replaceInContents(
-                fileContents,
+                fileContents || "",
                 parsedVars || [],
                 varSeparator,
                 placeholder,
@@ -63,9 +66,10 @@ export class FileProcessor {
     }
 
     private replaceInContents(contents: string, vars: IEnvVarInfo[], lineSeparator: string, placeholder: string, requestedIndentSize?: number): string {
-        return contents.split(lineSeparator).map(l => {
+        const result = contents.split(lineSeparator).map(l => {
             const indentSize = requestedIndentSize || l.indexOf(placeholder);
             return indentSize > -1 ? new VarYamlFormatter(lineSeparator, indentSize).format(vars) : l;
         }).join(lineSeparator);
+        return result;
     }
 }
