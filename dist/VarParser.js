@@ -24,7 +24,7 @@ class VarParser {
         if (!line) {
             return undefined;
         }
-        const varAndValRegex = /^(?<name>.+)\s*\:\s*(?<value>.*)$/g;
+        const varAndValRegex = /^(?<name>[^:]+)\s*\:\s*(?<value>.*)$/g;
         const matchedGroups = ((_a = varAndValRegex.exec(line)) === null || _a === void 0 ? void 0 : _a.groups) || {};
         const name = matchedGroups["name"];
         const value = matchedGroups["value"];

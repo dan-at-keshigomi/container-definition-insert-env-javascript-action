@@ -37,6 +37,21 @@ describe("VarParser", () => {
         expect(result && result[0]).toHaveProperty("Value", expectedValue);
     });
 
+    it.each([
+        ["VAR: 'x: 4'", "'x: 4'"],
+        ['VAR: "x: 4"', '"x: 4"']
+    ])
+    (".parseVars_withValueWithColon_getsCorrectNameAndValue", (varLine: string, expectedValue: string) => {
+        // act
+        const result = VarParser.parseVars([varLine]);
+
+        // assert
+        expect(result).not.toBeUndefined();
+        expect(result).toHaveLength(1);
+        expect(result && result[0]).toHaveProperty("Name", "VAR");
+        expect(result && result[0]).toHaveProperty("Value", expectedValue);
+    });
+
     it(".parseVars_withNoValue_usesUndefinedValue", (done: Function) => {
         // act
         const result = VarParser.parseVars(["myvar:"]);

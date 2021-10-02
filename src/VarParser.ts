@@ -23,7 +23,7 @@ export class VarParser {
         if (!line) {
             return undefined;
         }
-        const varAndValRegex = /^(?<name>.+)\s*\:\s*(?<value>.*)$/g;
+        const varAndValRegex = /^(?<name>[^:]+)\s*\:\s*(?<value>.*)$/g;
         const matchedGroups = varAndValRegex.exec(line)?.groups || {};
         const name = matchedGroups["name"];
         const value = matchedGroups["value"];

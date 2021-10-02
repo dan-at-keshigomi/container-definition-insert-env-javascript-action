@@ -27,8 +27,8 @@ describe("run", () => {
     it("withValidVars_insertsVarsIntoEnvironmentBlock", async () => {
         // arrange
         const testVar1 = "testVar1";
-        const testValue1 = "testValue1";
-        const testVar2 = "testVar2";
+        const testValue1 = '"testValue1"';
+        const testVar2 = '"testVar2"';
         const testValue2 = "testValue2";
         const inputs: IInputs = {
             ["file"]: "a file path",
@@ -53,6 +53,7 @@ describe("run", () => {
         expect(result).not.toBeUndefined();
         expect(result).toContain(`- Name: ${testVar1}`);
         expect(result).toContain(`Value: ${testValue1}`);
+        expect(result).toContain("TaskDefinition:");
     });
 
     it.each([
